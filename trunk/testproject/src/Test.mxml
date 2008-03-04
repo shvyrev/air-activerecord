@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:WindowedApplication xmlns:mx="http://www.adobe.com/2006/mxml" layout="vertical" applicationComplete="init()" verticalGap="0">
+	
+	<mx:Script>
+		<![CDATA[
+			import flight.db.activeRecord.TableCreator;
+			import flash.utils.getQualifiedClassName;
+			
+			private function init():void
+			{
+				stage.nativeWindow.activate();
+				var employer:Employer = new Employer();
+				var employee:Employee = new Employee();
+				TableCreator.updateTable(employer);
+				TableCreator.updateTable(employee);
+				
+				employer.save();
+				employer.employees.push(employee);
+				employer.saveRelated(Employee, true, employer.employees);
+				
+				trace(employer.employees);
+			}
+			
+			public function openDatabase():void
+			{
+				
+			}
+			
+			public function refreshSchema():void
+			{
+				
+			}
+		]]>
+	</mx:Script>
+	<!--
+	<mx:HBox width="100%" height="40">
+	</mx:HBox>
+	<mx:HDividedBox width="100%" height="100%">
+		<mx:Panel width="200" height="100%" layout="vertical" title="Schema">
+			<mx:Tree width="100%" height="100%"></mx:Tree>
+		</mx:Panel>
+		<mx:ViewStack id="main" width="100%" height="100%">
+			<mx:Canvas label="View 1" width="100%" height="100%">
+			</mx:Canvas>
+		</mx:ViewStack>
+	</mx:HDividedBox>
+	<mx:HBox width="100%" height="20">
+	</mx:HBox>-->
+</mx:WindowedApplication>
