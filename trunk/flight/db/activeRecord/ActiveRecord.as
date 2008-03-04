@@ -10,22 +10,27 @@ package flight.db.activeRecord
 	import flash.events.IEventDispatcher;
 	import flash.events.SQLEvent;
 	import flash.utils.Proxy;
-	import flash.utils.describeType;
 	import flash.utils.flash_proxy;
 	import flash.utils.getDefinitionByName;
 	import flash.utils.getQualifiedClassName;
 	
 	import flight.db.DB;
 	import flight.db.sql_db;
+	import flight.utils.Inflector;
+	import flight.utils.Reflection;
 	
 	use namespace sql_db;
 	use namespace flash_proxy;
 	
-	[Bindable]
 	public class ActiveRecord extends Proxy implements IEventDispatcher
 	{
 		sql_db static var tableSchemaCache:Object = {};
 		sql_db static var columnSchemaCache:Object = {};
+		
+		/**
+		 * Stores the runtime properties of related objects and arrays
+		 */
+		protected var relatedData:Object = {};
 		
 		/**
 		 * The default SQLConnection alias used for this stored object 
@@ -38,6 +43,11 @@ package flight.db.activeRecord
 		public static var schemaTranslation:SchemaTranslation = new SchemaTranslation();
 		
 		/**
+		 * Stores the constructor of this class since it is not available to Proxied objects
+		 */
+		public var constructor:Object;
+		
+		/**
 		 * This object's SQLConnection object, retrieved upon instantiation
 		 */
 		public var connection:SQLConnection;
@@ -45,11 +55,13 @@ package flight.db.activeRecord
 		private var _className:String;
 		private var eventDispatcher:EventDispatcher;
 		
+		[Bindable]
 		public var id:uint;
 		
 		
 		public function ActiveRecord()
 		{
+			constructor = getDefinitionByName(getQualifiedClassName(this));
 			eventDispatcher = new EventDispatcher(this);
 			connection = DB.getConnection(defaultConnectionAlias, true);
 		}
@@ -193,7 +205,8 @@ package flight.db.activeRecord
 			var sql:String = "SELECT *, " + tableName + "." + primaryKey + " FROM " + tableName;
 			sql += assembleQuery(conditions, order, limit, offset, joins);
 			
-			return loadItems(this["constructor"], sql, conditionParams);
+			var items:Array = loadItems(constructor as Class, sql, conditionParams);
+			return (items == null ? [] : items);
 		}
 		
 		/**
@@ -201,7 +214,7 @@ package flight.db.activeRecord
 		 */
 		public function findBySQL(sql:String, ...params:Array):Array
 		{
-			return loadItems(this["constructor"], sql, params);
+			return loadItems(constructor as Class, sql, params);
 		}
 		
 		/**
@@ -219,7 +232,7 @@ package flight.db.activeRecord
 		 */
 		public function create(properties:Object = null):ActiveRecord
 		{
-			var obj:ActiveRecord = new this["constructor"]();
+			var obj:ActiveRecord = new constructor();
 			obj.setDBProperties(properties);
 			obj.save();
 			return obj;
@@ -330,24 +343,56 @@ package flight.db.activeRecord
 		}
 		
 		
-		flash_proxy override function getDescendants(name:*):*
+		flash_proxy override function getProperty(name:*):*
 		{
-			var def:XML = describeType(this);
 			name = name.toString();
-			var relation:XML = def.metadata.(@name == "RelatedTo").arg.(@key == "name" && @value == name).parent();
+			
+			var relation:XML = Reflection.getMetadata(this, "RelatedTo").arg.(@key == "name" && @value == name).parent();
+			
+			if (!relation || name in relatedData)
+				return relatedData[name];
+			
+			var type:Class = getDefinitionByName(relation.arg.(@key == "className").@value) as Class;
+			var multiple:Boolean = relation.arg.(@key == "" && @value == "multiple").length();
+			relatedData[name] = loadRelated(type, multiple);
+			return relatedData[name];
+		}
+		
+		flash_proxy override function hasProperty(name:*):Boolean
+		{
+			name = name.toString();
+			
+			var relation:XML = Reflection.getMetadata(this, "RelatedTo").arg.(@key == "name" && @value == name).parent();
+			
+			return relation != null;
+		}
+		
+		
+		flash_proxy override function callProperty(name:*, ...params:Array):*
+		{
+			var matches:Array = name.toString().match(/^([a-z]+)(.+)/);
+			if (!matches || !this.hasOwnProperty(matches[1] + "Related"))
+				return;
+			
+			var relationalMethod:Function = this[matches[1] + "Related"];
+			var propertyName:String = Inflector.lowerFirst(matches[2]);
+			var relation:XML = Reflection.getMetadata(this, "RelatedTo").arg.(@key == "name" && @value == propertyName).parent();
 			
 			if (!relation)
 				return;
 			
 			var type:Class = getDefinitionByName(relation.arg.(@key == "className").@value) as Class;
 			var multiple:Boolean = relation.arg.(@key == "" && @value == "multiple").length();
-			return loadRelated(type, multiple);
-		}
-		
-		
-		flash_proxy override function getProperty(name:*):*
-		{
-			trace("Getting Property", name);
+			
+			if (relationalMethod == saveRelated)
+				params.unshift(this[propertyName]);
+			params.unshift(multiple);
+			params.unshift(type);
+			
+			if (relationalMethod == loadRelated)
+				return relatedData[name] = relationalMethod.apply(this, params);
+			else
+				return relationalMethod.apply(this, params);
 		}
 		
 		
@@ -399,7 +444,7 @@ package flight.db.activeRecord
 				params = params[0];
 			
 			for (var i:int = 0; i < params.length; i++)
-				stmt.parameters[i + 1] = params[i];
+				stmt.parameters[i] = params[i];
 			
 			stmt.execute();
 			var result:SQLResult = stmt.getResult();
@@ -417,7 +462,7 @@ package flight.db.activeRecord
 				params = params[0];
 			
 			for (var i:int = 0; i < params.length; i++)
-				stmt.parameters[i + 1] = params[i];
+				stmt.parameters[i] = params[i];
 			
 			var listener:Function = function(event:SQLEvent):void
 			{
@@ -431,6 +476,8 @@ package flight.db.activeRecord
 		
 		sql_db function loadItems(clazz:Class, sql:String, ...params:Array):Array
 		{
+			if (id == 0)
+				save();
 			var stmt:SQLStatement = new SQLStatement();
 			stmt.sqlConnection = connection;
 			stmt.text = sql;
@@ -440,7 +487,7 @@ package flight.db.activeRecord
 				params = params[0];
 			
 			for (var i:int = 0; i < params.length; i++)
-				stmt.parameters[i + 1] = params[i];
+				stmt.parameters[i] = params[i];
 			
 			stmt.execute();
 			var result:SQLResult = stmt.getResult();
