@@ -4,10 +4,10 @@ package flight.db.activeRecord
 	import flash.data.SQLSchemaResult;
 	import flash.data.SQLStatement;
 	import flash.data.SQLTableSchema;
-	import flash.utils.describeType;
 	
 	import flight.db.DB;
 	import flight.db.sql_db;
+	import flight.utils.Reflection;
 	
 	use namespace sql_db;
 	
@@ -23,8 +23,6 @@ package flight.db.activeRecord
 		 */
 		public static function updateTable(obj:ActiveRecord, schema:SQLTableSchema = null):void
 		{
-			obj.connection.begin();
-			
 			var tableName:String = ActiveRecord.schemaTranslation.getTable(obj.className);
 			var primaryKey:String = ActiveRecord.schemaTranslation.getPrimaryKey(obj.className);
 			
@@ -33,7 +31,7 @@ package flight.db.activeRecord
 			var sql:String;
 			
 			// get all this object's properties we want to store in the database
-			var def:XML = describeType(obj);
+			var def:XML = Reflection.describe(obj);
 			var publicVars:XMLList = def.*.(
 					(
 						localName() == "variable" ||
@@ -88,7 +86,8 @@ package flight.db.activeRecord
 					
 					fields.push(fieldDef.join(" "));
 				}
-					
+				
+				obj.connection.begin();
 				sql = "CREATE TABLE " + tableName + " (" + fields.join(", ") + ")";
 				stmt.text = sql;
 				stmt.execute();
@@ -114,13 +113,15 @@ package flight.db.activeRecord
 					// add the field to be created
 					fieldDef = ["ADD", field.@name, dbTypes[field.@type]];
 					
+					obj.connection.begin();
 					sql = "ALTER TABLE " + tableName + " " + fieldDef.join(" ");
 					stmt.text = sql;
 					stmt.execute();
 				}
 			}
 			
-			obj.connection.commit();
+			if (obj.connection.inTransaction)
+				obj.connection.commit();
 		}
 		
 		sql_db static var dbTypes:Object = {
