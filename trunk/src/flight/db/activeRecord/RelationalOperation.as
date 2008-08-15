@@ -160,10 +160,13 @@ package flight.db.activeRecord
 			{
 				switch (relationship)
 				{
-					case BELONGS_TO && property is ActiveRecord:
-						thatObj.save();
-						thisObj[thatForeignKey] = thatObj.id;
-						result = thisObj.save();
+					case BELONGS_TO:
+						if (property is ActiveRecord)
+						{
+							thatObj.save();
+							thisObj[thatForeignKey] = thatObj.id;
+							result = thisObj.save();
+						}
 						break;
 					case HAS_ONE:
 						thatObj[thisForeignKey] = thisObj.id;
