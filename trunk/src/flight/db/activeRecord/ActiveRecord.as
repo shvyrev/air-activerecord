@@ -476,8 +476,6 @@ package flight.db.activeRecord
 		
 		sql_db function loadItems(clazz:Class, sql:String, ...params:Array):Array
 		{
-			if (id == 0)
-				save();
 			var stmt:SQLStatement = new SQLStatement();
 			stmt.sqlConnection = connection;
 			stmt.text = sql;
