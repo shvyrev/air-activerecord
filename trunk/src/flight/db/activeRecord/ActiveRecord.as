@@ -396,25 +396,25 @@ package flight.db.activeRecord
 		}
 		
 		
-		public function loadRelated(clazz:Class, multiple:Boolean = false, conditions:String = null, conditionParams:Array = null, order:String = null, limit:uint = 0, offset:uint = 0):Object
+		sql_db function loadRelated(clazz:Class, multiple:Boolean = false, conditions:String = null, conditionParams:Array = null, order:String = null, limit:uint = 0, offset:uint = 0):Object
 		{
 			var r:RelationalOperation = new RelationalOperation(this, clazz, multiple);
 			return r.loadRelated(conditions, conditionParams, order, limit, offset);
 		}
 		
-		public function countRelated(clazz:Class, multiple:Boolean = false, conditions:String = null, conditionParams:Array = null):uint
+		sql_db function countRelated(clazz:Class, multiple:Boolean = false, conditions:String = null, conditionParams:Array = null):uint
 		{
 			var r:RelationalOperation = new RelationalOperation(this, clazz, multiple);
 			return r.countRelated(conditions, conditionParams);
 		}
 		
-		public function saveRelated(clazz:Class, multiple:Boolean = false, property:Object = null):Boolean
+		sql_db function saveRelated(clazz:Class, multiple:Boolean = false, property:Object = null):Boolean
 		{
 			var r:RelationalOperation = new RelationalOperation(this, clazz, multiple);
 			return r.saveRelated(property);
 		}
 		
-		public function deleteRelated(clazz:Class, multiple:Boolean = false, conditions:String = null, conditionParams:Array = null, joinOnly:Boolean = true):uint
+		sql_db function deleteRelated(clazz:Class, multiple:Boolean = false, conditions:String = null, conditionParams:Array = null, joinOnly:Boolean = true):uint
 		{
 			var r:RelationalOperation = new RelationalOperation(this, clazz, multiple);
 			return r.deleteRelated(conditions, conditionParams, joinOnly);
@@ -424,7 +424,7 @@ package flight.db.activeRecord
 		/**
 		 * Gives the class name for this object without the package info
 		 */
-		public function get className():String
+		sql_db function get className():String
 		{
 			if (!_className)
 			{
