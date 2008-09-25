@@ -17,7 +17,7 @@ package flight.db.activeRecord
 		
 		public function getForeignKey(className:String, foreignClassName:String):String
 		{
-			return Inflector.lowerFirst(foreignClassName) + "Id";
+			return Inflector.lowerFirst(foreignClassName) + "_id";
 		}
 		
 		public function getJoinTable(className1:String, className2:String):String
