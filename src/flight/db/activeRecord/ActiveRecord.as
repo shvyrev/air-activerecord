@@ -371,10 +371,11 @@ package flight.db.activeRecord
 		flash_proxy override function callProperty(name:*, ...params:Array):*
 		{
 			var matches:Array = name.toString().match(/^([a-z]+)(.+)/);
-			if (!matches || !this.hasOwnProperty(matches[1] + "Related"))
+			var prop:QName = new QName(sql_db, matches[1] + "Related");
+			if (!matches || !(this[prop] is Function) )
 				return;
 			
-			var relationalMethod:Function = this[matches[1] + "Related"];
+			var relationalMethod:Function = this[prop];
 			var propertyName:String = Inflector.lowerFirst(matches[2]);
 			var relation:XML = Reflection.getMetadata(this, "RelatedTo").arg.(@key == "name" && @value == propertyName).parent();
 			
