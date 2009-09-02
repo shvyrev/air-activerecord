@@ -16,7 +16,7 @@
 				
 				employer.save();
 				employer.employees.push(employee);
-				employer.saveRelated(Employee, true, employer.employees);
+				employer.saveEmployees();
 				
 				trace(employer.employees);
 			}

@@ -4,7 +4,7 @@ package
 	
 	public dynamic class Employee extends ActiveRecord
 	{
-		public var employerId:uint;
+		public var employer_id:uint;
 		public var name:String;
 		public var position:String;
 		public var hireDate:Date;
