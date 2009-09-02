@@ -94,7 +94,7 @@ package flight.db.activeRecord
 						joinTable = schTran.getJoinTable(thatClass, thisClass);
 						joinFields = thisObj.getFields(joinTable);
 						if (!joinFields)
-							throw new Error("Join not found");	// Cannot find the relationship
+							throw new Error("Join not found between " + thisClass + " and " + thatClass);	// Cannot find the relationship
 					}
 					
 					joins = " JOIN " + joinTable + " ON " + thatTable + "." + thatPrimaryKey + " = " + joinTable + "." + thatForeignKey;
