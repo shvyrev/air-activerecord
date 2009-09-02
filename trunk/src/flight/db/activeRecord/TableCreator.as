@@ -54,7 +54,9 @@ package flight.db.activeRecord
 			
 			if (!schema)
 			{
-				var dbschema:SQLSchemaResult = DB.getSchema(obj.connection);
+				try {
+					var dbschema:SQLSchemaResult = DB.getSchema(obj.connection);
+				} catch (e:Error) {}
 				
 				var schema:SQLTableSchema;
 				
