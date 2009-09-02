@@ -345,17 +345,17 @@ package flight.db.activeRecord
 		
 		flash_proxy override function getProperty(name:*):*
 		{
-			name = name.toString();
+			var property:String = name.toString();
 			
-			var relation:XML = Reflection.getMetadata(this, "RelatedTo").arg.(@key == "name" && @value == name).parent();
+			var relation:XML = Reflection.getMetadata(this, "RelatedTo").arg.(@key == "name" && @value == property).parent();
 			
-			if (!relation || name in relatedData)
-				return relatedData[name];
+			if (!relation || property in relatedData)
+				return relatedData[property];
 			
 			var type:Class = getDefinitionByName(relation.arg.(@key == "className").@value) as Class;
 			var multiple:Boolean = relation.arg.(@key == "" && @value == "multiple").length();
-			relatedData[name] = loadRelated(type, multiple);
-			return relatedData[name];
+			relatedData[property] = loadRelated(type, multiple);
+			return relatedData[property];
 		}
 		
 		flash_proxy override function hasProperty(name:*):Boolean
@@ -634,6 +634,11 @@ package flight.db.activeRecord
 		public function dispatchEvent(event:Event):Boolean
 		{
 			return eventDispatcher.dispatchEvent(event);
+		}
+		
+		public function toString():String
+		{
+			return "[" + className + "(id=" + id + ")]";
 		}
 	}
 }
