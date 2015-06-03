@@ -1,0 +1,1 @@
+AIR Active Record is an active record implementation in AIR using the embedded SQLite database.
